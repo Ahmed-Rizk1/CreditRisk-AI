@@ -47,12 +47,30 @@ MODEL_REGISTRY_NAME = "CreditRisk_Production_Model"
 
 
 def setup_mlflow():
-    """Configure MLflow tracking URI and experiment."""
+    """Configure MLflow tracking URI and experiment with cross-platform artifact paths."""
     os.makedirs(MLRUNS_DIR, exist_ok=True)
     os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
     db_path = os.path.join(MLRUNS_DIR, "mlflow.db").replace("\\", "/")
     tracking_uri = f"sqlite:///{db_path}"
     mlflow.set_tracking_uri(tracking_uri)
+
+    art_dir = os.path.join(MLRUNS_DIR, "artifacts").replace("\\", "/")
+    target_artifact_uri = f"file:{art_dir}"
+
+    client = MlflowClient(tracking_uri)
+    exp = client.get_experiment_by_name(EXPERIMENT_NAME)
+    if exp is None:
+        client.create_experiment(EXPERIMENT_NAME, artifact_location=target_artifact_uri)
+    else:
+        try:
+            client._tracking_client.store.update_experiment(
+                exp.experiment_id,
+                name=exp.name,
+                artifact_location=target_artifact_uri
+            )
+        except Exception:
+            pass
+
     mlflow.set_experiment(EXPERIMENT_NAME)
     print(f"[MLFLOW] Tracking URI set to: {tracking_uri}")
 
@@ -73,15 +91,15 @@ def evaluate_model(model, X_test, y_test):
         "recall": float(recall_score(y_test, y_pred, zero_division=0)),
         "f1_score": float(f1_score(y_test, y_pred, zero_division=0)),
         "log_loss": float(log_loss(y_test, y_pred_proba)),
-        "latency_per_sample_ms": float(latency_ms)
+        "latency_ms": float(latency_ms)
     }
 
     return metrics, y_pred, y_pred_proba
 
 
 def generate_and_log_plots(y_test, y_pred, y_pred_proba, model_name: str, run_id: str):
-    """Generate Confusion Matrix and ROC Curve artifact plots."""
-    artifacts_dir = os.path.join(MLRUNS_DIR, "tmp_artifacts")
+    """Generate confusion matrix and ROC curve plots, and log to MLflow."""
+    artifacts_dir = os.path.join(MLRUNS_DIR, "plots")
     os.makedirs(artifacts_dir, exist_ok=True)
 
     # 1. Confusion Matrix Plot
@@ -104,9 +122,12 @@ def generate_and_log_plots(y_test, y_pred, y_pred_proba, model_name: str, run_id
     plt.savefig(roc_path)
     plt.close(fig_roc)
 
-    # Log artifacts to MLflow
-    mlflow.log_artifact(cm_path, artifact_path="plots")
-    mlflow.log_artifact(roc_path, artifact_path="plots")
+    # Log artifacts to MLflow safely
+    try:
+        mlflow.log_artifact(cm_path, artifact_path="plots")
+        mlflow.log_artifact(roc_path, artifact_path="plots")
+    except Exception as ex:
+        print(f"[MLFLOW WARNING] Could not log plot artifacts: {ex}")
 
 
 def train_baseline_logistic_regression(X_train, y_train, X_test, y_test):
