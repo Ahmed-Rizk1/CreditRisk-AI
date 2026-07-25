@@ -16,28 +16,28 @@ An enterprise-grade, end-to-end Machine Learning platform built for financial in
 ```mermaid
 flowchart TD
     subgraph Data & Pipeline Layer
-        A[UCI Credit Dataset\n30,000 Records] --> B[Scikit-Learn Feature Pipeline\nStandardScaler + OneHot + Ratios]
-        C[Synthetic Drift Generator] --> B
+        A["UCI Credit Dataset (30,000 Records)"] --> B["Scikit-Learn Feature Pipeline (StandardScaler + OneHot + Ratios)"]
+        C["Synthetic Drift Generator"] --> B
     end
 
     subgraph MLOps & Experiment Tracking
-        B --> D[Optuna Hyperparameter Tuning]
-        D --> E[Model Benchmark Engine\nXGBoost | LightGBM | CatBoost | LogisticReg]
-        E --> F[MLflow Experiment Tracking & SQLite Store]
-        F --> G[MLflow Model Registry\nstage=Production]
+        B --> D["Optuna Hyperparameter Tuning"]
+        D --> E["Model Benchmark Engine (XGBoost / LightGBM / CatBoost / LogisticReg)"]
+        E --> F["MLflow Experiment Tracking & SQLite Store"]
+        F --> G["MLflow Model Registry (stage=Production)"]
     end
 
     subgraph FastAPI Serving & Telemetry
-        G --> H[FastAPI Inference Engine\nLow Latency <50ms]
-        H --> I[SHAP Explainer Module\nFeature Contributions & Adverse Actions]
-        H --> J[KS Statistical Data Drift Engine]
+        G --> H["FastAPI Inference Engine (<50ms Latency)"]
+        H --> I["SHAP Explainer Module (Feature Contributions & Adverse Actions)"]
+        H --> J["KS Statistical Data Drift Engine"]
     end
 
     subgraph User Experience Layer
-        H <--> K[React + TypeScript + Vite SPA]
-        K --> L[Single Applicant Risk Gauge & SHAP Chart]
-        K --> M[Batch CSV Portfolio Processor]
-        K --> N[Model Health & Telemetry Dashboard]
+        H <--> K["React + TypeScript + Vite SPA"]
+        K --> L["Single Applicant Risk Gauge & SHAP Chart"]
+        K --> M["Batch CSV Portfolio Processor"]
+        K --> N["Model Health & Telemetry Dashboard"]
     end
 ```
 
