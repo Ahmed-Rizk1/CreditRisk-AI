@@ -1,0 +1,29 @@
+# Render Blueprint configuration for CreditRisk AI
+services:
+  # 1. FastAPI ML Backend Service
+  - type: web
+    name: creditrisk-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install uv && uv pip install --system -r backend/requirements.txt && python backend/ml/data/download_or_generate.py && python backend/ml/train.py"
+    startCommand: "uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.14
+      - key: MLFLOW_TRACKING_URI
+        value: sqlite:///mlruns/mlflow.db
+      - key: MLFLOW_ALLOW_FILE_STORE
+        value: "true"
+
+  # 2. React + TypeScript SPA Frontend Static Site
+  - type: web
+    name: creditrisk-frontend
+    env: static
+    region: oregon
+    buildCommand: "cd frontend && npm install && npm run build"
+    staticPublishPath: "./frontend/dist"
+    routes:
+      - type: rewrite
+        source: "/*"
+        destination: "/index.html"

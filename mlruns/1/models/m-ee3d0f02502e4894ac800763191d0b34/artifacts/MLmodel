@@ -1,0 +1,27 @@
+artifact_path: file:///D:/machineLearning_project/mlruns/1/models/m-ee3d0f02502e4894ac800763191d0b34/artifacts
+flavors:
+  lightgbm:
+    code: null
+    data: model.skops
+    lgb_version: 4.7.0
+    model_class: lightgbm.sklearn.LGBMClassifier
+    serialization_format: skops
+    skops_trusted_types:
+    - lightgbm.sklearn.LGBMRegressor
+    - lightgbm.basic.Booster
+    - lightgbm.sklearn.LGBMClassifier
+    - collections.OrderedDict
+  python_function:
+    data: model.skops
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.lightgbm
+    python_version: 3.11.14
+mlflow_version: 3.14.0
+model_id: m-ee3d0f02502e4894ac800763191d0b34
+model_size_bytes: 176130
+model_uuid: m-ee3d0f02502e4894ac800763191d0b34
+prompts: null
+run_id: df0c3c414a9d430b8219c67649c538dd
+utc_time_created: '2026-07-25 13:52:45.676880'
