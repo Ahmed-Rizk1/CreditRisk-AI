@@ -50,7 +50,24 @@ def setup_mlflow():
     """Configure MLflow tracking URI and experiment with cross-platform artifact paths."""
     os.makedirs(MLRUNS_DIR, exist_ok=True)
     os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
-    db_path = os.path.join(MLRUNS_DIR, "mlflow.db").replace("\\", "/")
+    db_file = os.path.join(MLRUNS_DIR, "mlflow.db")
+
+    # If running on non-Windows (Linux/Render) and DB contains Windows drive letters, reset stale DB
+    if os.name != 'nt' and os.path.exists(db_file):
+        try:
+            import sqlite3
+            conn = sqlite3.connect(db_file)
+            cursor = conn.cursor()
+            cursor.execute("SELECT artifact_location FROM experiments LIMIT 1;")
+            row = cursor.fetchone()
+            conn.close()
+            if row and ("D:" in str(row[0]) or "C:" in str(row[0]) or "/D:" in str(row[0])):
+                print("[MLFLOW] Resetting stale Windows MLflow database on Linux server...")
+                os.remove(db_file)
+        except Exception:
+            pass
+
+    db_path = db_file.replace("\\", "/")
     tracking_uri = f"sqlite:///{db_path}"
     mlflow.set_tracking_uri(tracking_uri)
 
