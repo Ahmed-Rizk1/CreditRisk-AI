@@ -23,7 +23,11 @@ services:
     region: oregon
     buildCommand: "cd frontend && npm install && npm run build"
     staticPublishPath: "./frontend/dist"
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://creditrisk-backend.onrender.com/api/v1
     routes:
       - type: rewrite
         source: "/*"
         destination: "/index.html"
+
