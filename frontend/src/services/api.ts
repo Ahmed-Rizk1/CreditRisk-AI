@@ -8,11 +8,13 @@ import {
 } from '../types/credit';
 
 export const getEffectiveApiBaseUrl = (): string => {
-  // 1. Check user custom override in localStorage
-  const savedUrl = typeof window !== 'undefined' ? localStorage.getItem('CREDITRISK_API_URL') : null;
-  if (savedUrl && savedUrl.trim()) {
-    const clean = savedUrl.trim().replace(/\/$/, '');
-    return clean.endsWith('/api/v1') ? clean : `${clean}/api/v1`;
+  // 1. Render auto-domain derivation (if running on static site on render.com)
+  if (typeof window !== 'undefined' && window.location.hostname.includes('.onrender.com')) {
+    const currentHost = window.location.hostname;
+    if (currentHost.includes('-frontend')) {
+      const derivedBackendHost = currentHost.replace('-frontend', '-backend');
+      return `https://${derivedBackendHost}/api/v1`;
+    }
   }
 
   // 2. Check build-time env var
@@ -22,16 +24,7 @@ export const getEffectiveApiBaseUrl = (): string => {
     return clean.endsWith('/api/v1') ? clean : `${clean}/api/v1`;
   }
 
-  // 3. Render auto-domain derivation (if running on static site on render.com)
-  if (typeof window !== 'undefined' && window.location.hostname.includes('.onrender.com')) {
-    const currentHost = window.location.hostname;
-    if (currentHost.includes('-frontend')) {
-      const derivedBackendHost = currentHost.replace('-frontend', '-backend');
-      return `https://${derivedBackendHost}/api/v1`;
-    }
-  }
-
-  // 4. Default relative API path for local dev proxy
+  // 3. Default relative API path for local dev proxy
   return '/api/v1';
 };
 
