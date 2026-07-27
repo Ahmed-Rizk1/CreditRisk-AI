@@ -51,16 +51,18 @@ class ModelService:
         else:
             print(f"[SERVICE WARNING] SHAP Explainer missing at {settings.EXPLAINER_SAVE_PATH}")
 
-        # 3. Load Production Model from MLflow Registry or Explainer Model
-        try:
-            mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
-            model_uri = f"models:/{settings.MODEL_REGISTRY_NAME}/1"
-            self.model = mlflow.pyfunc.load_model(model_uri)
-            print(f"[SERVICE] Successfully loaded production model from MLflow Registry: {model_uri}")
-        except Exception as e:
-            print(f"[SERVICE] Could not load model from MLflow registry ({e}). Using SHAP explainer fallback model.")
-            if self.explainer and hasattr(self.explainer, "model"):
-                self.model = self.explainer.model
+        # 3. Load Production Model from Explainer Model or MLflow Registry
+        if self.explainer and hasattr(self.explainer, "model") and self.explainer.model is not None:
+            self.model = self.explainer.model
+            print(f"[SERVICE] Successfully loaded production model directly from SHAP explainer.")
+        else:
+            try:
+                mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
+                model_uri = f"models:/{settings.MODEL_REGISTRY_NAME}/1"
+                self.model = mlflow.pyfunc.load_model(model_uri)
+                print(f"[SERVICE] Successfully loaded production model from MLflow Registry: {model_uri}")
+            except Exception as e:
+                print(f"[SERVICE WARNING] Could not load model from MLflow registry: {e}")
 
     def predict_single(self, applicant_data: CreditApplicantInput, applicant_id: str = None) -> PredictionResponse:
         """Execute single applicant risk scoring + SHAP waterfall explanation."""

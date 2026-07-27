@@ -50,25 +50,37 @@ export const SingleAssessment: React.FC = () => {
     setError(null);
     setIsWakingUp(false);
 
-    // If server cold starts, notify user after 3 seconds
     const wakeupTimer = setTimeout(() => {
       setIsWakingUp(true);
-    }, 3000);
+    }, 2500);
 
-    try {
-      const res = await api.predictSingle(formData);
-      setResult(res);
-    } catch (err: any) {
-      console.error('Prediction error:', err);
-      const errMsg = err?.response?.data?.detail 
-        || err?.message 
-        || 'Network error or backend timeout. Render Free Tier may be waking up.';
-      setError(errMsg);
-    } finally {
-      clearTimeout(wakeupTimer);
-      setIsWakingUp(false);
-      setLoading(false);
+    let attempts = 0;
+    const maxAttempts = 6;
+    let success = false;
+
+    while (attempts < maxAttempts && !success) {
+      attempts++;
+      try {
+        const res = await api.predictSingle(formData);
+        setResult(res);
+        success = true;
+      } catch (err: any) {
+        console.warn(`Inference attempt ${attempts} failed:`, err?.message);
+        if (attempts >= maxAttempts) {
+          const errMsg = err?.response?.data?.detail 
+            || err?.message 
+            || 'Backend service is taking longer than expected to wake up on Render Free Tier. Please retry in a few seconds.';
+          setError(errMsg);
+        } else {
+          // Wait 3 seconds before automatic retry on cold start
+          await new Promise((r) => setTimeout(r, 3000));
+        }
+      }
     }
+
+    clearTimeout(wakeupTimer);
+    setIsWakingUp(false);
+    setLoading(false);
   };
 
   // Format SHAP data for Recharts Waterfall

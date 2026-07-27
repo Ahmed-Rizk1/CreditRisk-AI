@@ -4,9 +4,8 @@ services:
   - type: web
     name: creditrisk-backend
     env: python
-    region: oregon
     plan: free
-    buildCommand: "pip install -r backend/requirements.txt && python backend/ml/data/download_or_generate.py && python backend/ml/train.py"
+    buildCommand: "pip install -r backend/requirements.txt && python backend/ml/data/download_or_generate.py"
     startCommand: "uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: PYTHON_VERSION
