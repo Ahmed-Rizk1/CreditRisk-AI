@@ -28,10 +28,13 @@ class CreditRiskExplainer:
     def _init_explainer(self, model):
         """Initialize SHAP explainer targeting tree-based models or general estimators."""
         try:
-            self.explainer = shap.TreeExplainer(model)
+            self.explainer = shap.TreeExplainer(model, check_additivity=False)
         except Exception:
-            # Fallback to general SHAP explainer
-            self.explainer = shap.Explainer(model)
+            try:
+                self.explainer = shap.TreeExplainer(model)
+            except Exception:
+                # Fallback to general SHAP explainer
+                self.explainer = shap.Explainer(model)
 
     def explain_instance(self, X_instance: pd.DataFrame) -> dict:
         """
@@ -49,7 +52,10 @@ class CreditRiskExplainer:
         if self.explainer is None:
             raise ValueError("SHAP explainer has not been initialized with a trained model.")
 
-        shap_vals = self.explainer(X_instance)
+        try:
+            shap_vals = self.explainer(X_instance, check_additivity=False)
+        except Exception:
+            shap_vals = self.explainer(X_instance)
         
         # Handle 1D vs 2D SHAP output arrays
         values = shap_vals.values[0] if len(shap_vals.values.shape) > 1 else shap_vals.values

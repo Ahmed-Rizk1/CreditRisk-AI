@@ -32,6 +32,8 @@ export const SingleAssessment: React.FC = () => {
   });
 
   const [loading, setLoading] = useState<boolean>(false);
+  const [isWakingUp, setIsWakingUp] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PredictionResponse | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -42,15 +44,29 @@ export const SingleAssessment: React.FC = () => {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setLoading(true);
+    setError(null);
+    setIsWakingUp(false);
+
+    // If server cold starts, notify user after 3 seconds
+    const wakeupTimer = setTimeout(() => {
+      setIsWakingUp(true);
+    }, 3000);
+
     try {
       const res = await api.predictSingle(formData);
       setResult(res);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Prediction error:', err);
+      const errMsg = err?.response?.data?.detail 
+        || err?.message 
+        || 'Network error or backend timeout. Render Free Tier may be waking up.';
+      setError(errMsg);
     } finally {
+      clearTimeout(wakeupTimer);
+      setIsWakingUp(false);
       setLoading(false);
     }
   };
@@ -197,9 +213,55 @@ export const SingleAssessment: React.FC = () => {
 
             <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
               {loading ? <Zap size={18} className="animate-spin" /> : <ShieldAlert size={18} />}
-              {loading ? 'Calculating Risk & SHAP Attributions...' : 'Evaluate Credit Risk & Explain'}
+              {loading ? (isWakingUp ? 'Waking up Render backend instance...' : 'Calculating Risk & SHAP Attributions...') : 'Evaluate Credit Risk & Explain'}
             </button>
           </form>
+
+          {isWakingUp && (
+            <div style={{
+              marginTop: '16px',
+              padding: '12px 16px',
+              borderRadius: '10px',
+              background: 'rgba(245, 158, 11, 0.1)',
+              border: '1px solid var(--status-warning)',
+              color: 'var(--status-warning)',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <Zap size={18} className="animate-spin" />
+              <div>
+                <strong>Backend spin-up detected:</strong> Render Free Tier service is spinning up from cold storage (~30-50s). Please stay on this page!
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div style={{
+              marginTop: '16px',
+              padding: '16px',
+              borderRadius: '12px',
+              background: 'rgba(244, 63, 94, 0.1)',
+              border: '1px solid var(--status-danger)',
+              color: '#fecdd3'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 700, marginBottom: '6px', color: 'var(--status-danger)' }}>
+                <XCircle size={20} /> Evaluation Request Failed
+              </div>
+              <p style={{ fontSize: '0.88rem', margin: 0, marginBottom: '12px', lineHeight: 1.4 }}>
+                {error}
+              </p>
+              <button
+                type="button"
+                onClick={() => handleSubmit()}
+                className="btn-secondary"
+                style={{ padding: '6px 14px', fontSize: '0.82rem', borderColor: 'var(--status-danger)', color: '#fff' }}
+              >
+                Retry Request
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Prediction Results & SHAP Explanation Column */}

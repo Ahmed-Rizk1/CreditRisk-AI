@@ -22,19 +22,39 @@ from backend.app.schemas.credit import (
 from backend.app.services.model_service import model_service
 from backend.ml.drift import compute_data_drift
 
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Warm up ML model & SHAP explainer on server boot to avoid JIT latency on first request."""
+    try:
+        dummy_input = CreditApplicantInput(
+            LIMIT_BAL=50000, SEX=2, EDUCATION=2, MARRIAGE=1, AGE=35,
+            PAY_0=0, PAY_2=0, PAY_3=0, PAY_4=0, PAY_5=0, PAY_6=0,
+            BILL_AMT1=20000, BILL_AMT2=19000, BILL_AMT3=18000, BILL_AMT4=17000, BILL_AMT5=16000, BILL_AMT6=15000,
+            PAY_AMT1=2000, PAY_AMT2=2000, PAY_AMT3=2000, PAY_AMT4=2000, PAY_AMT5=2000, PAY_AMT6=2000
+        )
+        model_service.predict_single(dummy_input)
+        print("[STARTUP WARMUP] Model & SHAP explainer successfully pre-warmed.")
+    except Exception as ex:
+        print(f"[STARTUP WARMUP WARNING] Pre-warm failed: {ex}")
+    yield
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="Enterprise Credit Risk Scoring & Explainable Decision Platform API",
     openapi_url=f"{settings.API_V1_PREFIX}/openapi.json",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # Enable CORS for React SPA frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Production: specify Vite dev & prod URLs
+    allow_origins=["*"],
+    allow_origin_regex=r"https://.*\.onrender\.com",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
