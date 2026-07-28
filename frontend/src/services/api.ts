@@ -15,7 +15,10 @@ export const getCandidateUrls = (): string[] => {
   // 1. Build-time environment variable
   const envUrl = import.meta.env.VITE_API_BASE_URL || '';
   if (envUrl && envUrl.trim()) {
-    const clean = envUrl.trim().replace(/\/$/, '');
+    let clean = envUrl.trim().replace(/\/$/, '');
+    if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+      clean = `https://${clean}`;
+    }
     candidates.push(clean.endsWith('/api/v1') ? clean : `${clean}/api/v1`);
   }
 

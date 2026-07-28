@@ -27,7 +27,7 @@ services:
         fromService:
           type: web
           name: creditrisk-backend
-          property: url
+          property: host
     routes:
       - type: rewrite
         source: "/*"
