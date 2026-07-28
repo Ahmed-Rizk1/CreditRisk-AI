@@ -24,7 +24,10 @@ services:
     staticPublishPath: "./dist"
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://creditrisk-backend.onrender.com/api/v1
+        fromService:
+          type: web
+          name: creditrisk-backend
+          property: url
     routes:
       - type: rewrite
         source: "/*"
