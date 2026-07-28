@@ -84,15 +84,16 @@ export const SingleAssessment: React.FC = () => {
   };
 
   // Format SHAP data for Recharts Waterfall
-  const shapData = result?.shap_explanation.feature_contributions
-    ? result.shap_explanation.feature_contributions
-        .sort((a, b) => Math.abs(b.shap_value) - Math.abs(a.shap_value))
+  const featureContributions = result?.shap_explanation?.feature_contributions;
+  const shapData = Array.isArray(featureContributions)
+    ? [...featureContributions]
+        .sort((a, b) => Math.abs(b?.shap_value || 0) - Math.abs(a?.shap_value || 0))
         .slice(0, 8)
         .map(item => ({
-          name: item.feature.replace('_', ' '),
-          impact: Number((item.shap_value * 100).toFixed(2)),
-          raw: item.feature_value,
-          direction: item.impact,
+          name: item?.feature ? String(item.feature).replace('_', ' ') : 'Feature',
+          impact: Number(((item?.shap_value || 0) * 100).toFixed(2)),
+          raw: item?.feature_value ?? 0,
+          direction: item?.impact || 'REDUCES_RISK',
         }))
     : [];
 
